@@ -83,11 +83,11 @@ public class JsonUtil {
         Map<String, String> map = new HashMap<>();
         if (json == null || json.trim().isEmpty()) return map;
 
-        Pattern pattern = Pattern.compile("\"([^\"]+)\"\\s*:\\s*(?:\"([^\"]*)\"|([^,}\\]]+))");
+        Pattern pattern = Pattern.compile("(?:\"([^\"]+)\"|([a-zA-Z0-9_]+))\\s*:\\s*(?:\"([^\"]*)\"|([^,}\\]]+))");
         Matcher matcher = pattern.matcher(json);
         while (matcher.find()) {
-            String key = matcher.group(1);
-            String val = matcher.group(2) != null ? matcher.group(2) : (matcher.group(3) != null ? matcher.group(3).trim() : "");
+            String key = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+            String val = matcher.group(3) != null ? matcher.group(3) : (matcher.group(4) != null ? matcher.group(4).trim() : "");
             map.put(key, val);
         }
         return map;

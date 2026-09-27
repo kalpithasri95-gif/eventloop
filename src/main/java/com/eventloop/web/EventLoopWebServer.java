@@ -742,6 +742,21 @@ public class EventLoopWebServer {
                 String body = readBody(ex);
                 Map<String, String> map = JsonUtil.parseSimpleJson(body);
                 String msg = map.getOrDefault("message", "");
+                if (msg.trim().isEmpty() && body != null && body.contains("message")) {
+                    int idx = body.indexOf("message");
+                    int colon = body.indexOf(":", idx);
+                    if (colon != -1) {
+                        String rest = body.substring(colon + 1).trim();
+                        if (rest.startsWith("\"")) {
+                            int nextQ = rest.indexOf("\"", 1);
+                            if (nextQ != -1) msg = rest.substring(1, nextQ);
+                        } else {
+                            int end = rest.indexOf("}");
+                            if (end != -1) msg = rest.substring(0, end).trim();
+                        }
+                    }
+                }
+
                 com.eventloop.service.AiCopilotService.ChatResponse reply = com.eventloop.service.AiCopilotService.getInstance().processQuery(msg);
                 sendJsonResponse(ex, 200, JsonUtil.toJson(reply));
             } catch (Exception e) {

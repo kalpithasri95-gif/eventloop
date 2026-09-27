@@ -108,6 +108,7 @@ public class EventLoopWebServer {
         server.createContext("/api/oop-demo", new OopDemoApiHandler());
         server.createContext("/api/optimizer/generate-plans", new OptimizerApiHandler());
         server.createContext("/api/ai/chat", new AiChatApiHandler());
+        server.createContext("/api/enterprise/quotation", new EnterpriseQuotationApiHandler());
 
         server.setExecutor(null); // Default executor
         server.start();
@@ -743,6 +744,35 @@ public class EventLoopWebServer {
                 String msg = map.getOrDefault("message", "");
                 com.eventloop.service.AiCopilotService.ChatResponse reply = com.eventloop.service.AiCopilotService.getInstance().processQuery(msg);
                 sendJsonResponse(ex, 200, JsonUtil.toJson(reply));
+            } catch (Exception e) {
+                sendError(ex, 500, e.getMessage());
+            }
+        }
+    }
+
+    // 16. Private Event Enterprise Quotation API
+    private static class EnterpriseQuotationApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange ex) throws IOException {
+            setCors(ex);
+            if (handleOptions(ex)) return;
+
+            try {
+                String body = readBody(ex);
+                Map<String, String> map = JsonUtil.parseSimpleJson(body);
+                String eventType = map.getOrDefault("eventType", "Luxury Wedding & Reception");
+                double budget = 300000.0;
+                if (map.containsKey("budget")) {
+                    try { budget = Double.parseDouble(map.get("budget")); } catch (Exception ignored) {}
+                }
+                int guests = 400;
+                if (map.containsKey("guests")) {
+                    try { guests = Integer.parseInt(map.get("guests")); } catch (Exception ignored) {}
+                }
+
+                List<com.eventloop.model.EventQuotationPackage> pkgs = 
+                    com.eventloop.service.EventCompanyQuotationService.getInstance().generateClientQuotations(eventType, budget, guests);
+                sendJsonResponse(ex, 200, JsonUtil.toJson(pkgs));
             } catch (Exception e) {
                 sendError(ex, 500, e.getMessage());
             }

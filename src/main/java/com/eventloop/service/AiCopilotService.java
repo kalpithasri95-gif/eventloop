@@ -68,7 +68,12 @@ public class AiCopilotService {
             return generateAiTrainingExplanation();
         }
 
-        // 2. Check for Budget & Item Requirements extraction
+        // 2. Private Event Management Company Mode (Weddings, Corporate, Quotations, Profit Margin, Cross-Hiring)
+        if (lower.contains("wedding") || lower.contains("corporate") || lower.contains("client") || lower.contains("private") || lower.contains("quotation") || lower.contains("quote") || lower.contains("profit") || lower.contains("company")) {
+            return generatePrivateCompanyQuotation(userMessage);
+        }
+
+        // 3. Check for Budget & Item Requirements extraction
         double extractedBudget = extractBudget(userMessage);
         List<RequirementItem> items = extractRequirements(userMessage);
 
@@ -196,4 +201,48 @@ public class AiCopilotService {
             return new ChatResponse("Could not query inventory: " + e.getMessage());
         }
     }
+
+    private ChatResponse generatePrivateCompanyQuotation(String userMessage) {
+        double budget = extractBudget(userMessage);
+        if (budget <= 0) budget = 300000.0; // ₹3 Lakhs default client budget
+
+        String eventType = "Luxury Wedding & Reception";
+        String lower = userMessage.toLowerCase();
+        if (lower.contains("corporate") || lower.contains("conference") || lower.contains("product")) {
+            eventType = "Corporate Brand Launch & Gala";
+        } else if (lower.contains("concert") || lower.contains("dj") || lower.contains("music")) {
+            eventType = "Live Concert & DJ Night";
+        } else if (lower.contains("expo") || lower.contains("exhibition")) {
+            eventType = "Trade Expo & Fashion Showcase";
+        }
+
+        List<com.eventloop.model.EventQuotationPackage> packages = 
+            com.eventloop.service.EventCompanyQuotationService.getInstance().generateClientQuotations(eventType, budget, 400);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("🏢 **Enterprise Client Commercial Quotation Proposal**\n"));
+        sb.append(String.format("• **Client Event Type:** %s\n", eventType));
+        sb.append(String.format("• **Target Client Budget:** ₹%,.2f\n\n", budget));
+        sb.append("Here are your **3 AI Commercial Packages with Net Profit & Vendor Cost Splits**:\n\n");
+
+        for (com.eventloop.model.EventQuotationPackage p : packages) {
+            sb.append(String.format("### 🏆 %s\n", p.getPackageName()));
+            sb.append(String.format("• **Client Billable Quote:** ₹%,.2f\n", p.getClientQuotePrice()));
+            sb.append(String.format("• **Company Direct Cost:** ₹%,.2f\n", p.getInternalDirectCost()));
+            sb.append(String.format("• **Net Profit:** 💰 **₹%,.2f** *(%.1f%% Gross Margin)*\n", p.getGrossProfit(), p.getProfitMarginPct()));
+            sb.append(String.format("• **Refundable Security Deposit:** ₹%,.2f\n", p.getSecurityDepositRequired()));
+            sb.append(String.format("• **Crew & Logistics:** %d Technicians | %d Setup Hours\n", p.getCrewTechniciansNeeded(), p.getSetupDurationHours()));
+            sb.append(String.format("• **Sourcing:** %d In-House Items | %d Cross-Hired Vendor Items\n", p.getInHouseItemsUsed(), p.getVendorCrossHiredItems()));
+            sb.append(String.format("• **Suitability:** *%s*\n\n", p.getClientTargetSuitability()));
+        }
+
+        sb.append("💡 **Event Planner Secret:** **Gold Signature Package** gives you the best client conversion rate while delivering a healthy **₹1,44,000+ net profit**! Silver Package gives **60%+ pure profit** by eliminating vendor cross-hiring.");
+
+        ChatResponse res = new ChatResponse(sb.toString());
+        res.getSuggestionChips().add("📄 Export Client PDF Proposal");
+        res.getSuggestionChips().add("🚚 Cross-Hire Vendor Cost Split");
+        res.getSuggestionChips().add("🔒 Client Damage Security Gatepass");
+        return res;
+    }
 }
+

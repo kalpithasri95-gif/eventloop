@@ -77,6 +77,7 @@ function switchTab(tabName) {
     else if (tabName === 'reservations') loadReservations();
     else if (tabName === 'reports') loadReport();
     else if (tabName === 'optimizer') { initOptimizerEvents(); runBudgetOptimizer(); }
+    else if (tabName === 'enterprise') { runEnterpriseQuotation(); }
 }
 
 // ==================== USER & PRODUCTION AUTH ====================
@@ -1226,4 +1227,175 @@ async function sendAiMessage() {
         feed.scrollTop = feed.scrollHeight;
     }
 }
+
+// ==================== 11. PRIVATE EVENT PLANNER ENTERPRISE STUDIO ====================
+let currentEnterprisePackages = [];
+let currentSecurityDeposit = 30000.0;
+
+async function runEnterpriseQuotation() {
+    const clientName = document.getElementById('entClientName')?.value.trim() || 'Luxury Wedding';
+    const eventType = document.getElementById('entEventType')?.value || 'Luxury Wedding & Reception';
+    const guests = parseInt(document.getElementById('entGuests')?.value) || 450;
+    const budget = parseFloat(document.getElementById('entBudget')?.value) || 300000;
+    const btn = document.getElementById('btnRunEnterprise');
+    const container = document.getElementById('enterpriseCardsContainer');
+    const tbody = document.getElementById('tblEnterpriseBody');
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⚡ Computing Commercial Proposals...';
+    }
+
+    try {
+        const res = await fetch('/api/enterprise/quotation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventType: eventType, budget: String(budget), guests: String(guests) })
+        });
+        const packages = await res.json();
+        currentEnterprisePackages = packages;
+
+        if (packages && packages.length > 0) {
+            currentSecurityDeposit = packages[0].securityDepositRequired || 30000;
+            const depositEl = document.getElementById('entDepositHeld');
+            if (depositEl) depositEl.textContent = formatCurrency(currentSecurityDeposit);
+
+            // Render Commercial Package Cards
+            container.innerHTML = packages.map(pkg => {
+                const isGold = pkg.packageTier === 'GOLD_BALANCED';
+                const isPlat = pkg.packageTier === 'PLATINUM_VIP';
+                const borderClass = isGold ? 'border-primary' : (isPlat ? 'border-purple' : 'border-success');
+
+                return `
+                    <div class="scenario-card" style="border-left: 5px solid ${isGold ? '#2563EB' : (isPlat ? '#8B5CF6' : '#10B981')};">
+                        <div class="scenario-header">
+                            <span class="scenario-title">${pkg.packageName}</span>
+                            <span class="badge ${isGold ? 'badge-info' : (isPlat ? 'badge-purple' : 'badge-success')}">
+                                ${isGold ? '⭐ BEST SELLER (HIGH MARGIN)' : (isPlat ? 'VIP LUXURY' : 'MAX PROFIT (100% IN-HOUSE)')}
+                            </span>
+                        </div>
+                        <div class="scenario-cost-row">
+                            <div>
+                                <span class="small text-muted">Client Quote Price:</span><br>
+                                <span class="scenario-cost font-bold">${formatCurrency(pkg.clientQuotePrice)}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="small text-muted">Net Company Profit:</span><br>
+                                <span class="scenario-cost text-success font-bold">${formatCurrency(pkg.grossProfit)}</span>
+                                <span class="badge badge-success small">(${pkg.profitMarginPct.toFixed(1)}% Margin)</span>
+                            </div>
+                        </div>
+                        <div class="scenario-metrics">
+                            <span class="scenario-metric-item">🔒 Deposit: <b>${formatCurrency(pkg.securityDepositRequired)}</b></span>
+                            <span class="scenario-metric-item">👷 Crew: <b>${pkg.crewTechniciansNeeded} Techs</b></span>
+                            <span class="scenario-metric-item">⏱️ Setup: <b>${pkg.setupDurationHours} Hours</b></span>
+                            <span class="scenario-metric-item">🏢 In-House: <b>${pkg.inHouseItemsUsed} units</b></span>
+                            ${pkg.vendorCrossHiredItems > 0 ? `<span class="scenario-metric-item">🚚 Cross-Hire: <b>${pkg.vendorCrossHiredItems} units</b></span>` : '<span class="scenario-metric-item text-success">✨ 0% Cross-Hire Bleed</span>'}
+                        </div>
+                        <p class="small text-muted mt-1 mb-2">${pkg.clientTargetSuitability}</p>
+                        <button class="btn ${isGold ? 'btn-primary' : 'btn-outline'} btn-sm btn-block" onclick="selectEnterprisePackage('${pkg.packageTier}')">
+                            Select ${pkg.packageName.split('(')[0].trim()} Proposal
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Render Itemized Line-Items of the Gold Package
+            const goldPkg = packages.find(p => p.packageTier === 'GOLD_BALANCED') || packages[0];
+            if (goldPkg && goldPkg.itemizedList) {
+                tbody.innerHTML = goldPkg.itemizedList.map(item => `
+                    <tr>
+                        <td><span class="badge badge-purple">${item.category}</span></td>
+                        <td><b>${item.itemName}</b></td>
+                        <td>${item.quantity}</td>
+                        <td>
+                            ${item.sourcingType === 'VENDOR_CROSS_HIRE' ? 
+                                `<span class="badge badge-warning">🚚 Cross-Hire: ${item.partnerVendor}</span>` :
+                                `<span class="badge badge-success">🏢 In-House: ${item.partnerVendor}</span>`}
+                        </td>
+                        <td class="text-danger font-bold">${formatCurrency(item.internalCost)}</td>
+                        <td class="text-blue font-bold">${formatCurrency(item.clientBillingRate)}</td>
+                        <td class="text-success font-bold">${formatCurrency(item.clientBillingRate - item.internalCost)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (e) {
+        showToast('Enterprise quote error: ' + e.message, 'danger');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '⚡ Generate Commercial Packages & Profit Margins';
+        }
+    }
+}
+
+function selectEnterprisePackage(tier) {
+    const pkg = currentEnterprisePackages.find(p => p.packageTier === tier);
+    if (!pkg) return;
+    showToast(`✅ ${pkg.packageName} locked! Profit of ${formatCurrency(pkg.grossProfit)} estimated.`, 'success');
+}
+
+function simulateDamagePenalty() {
+    const penalty = 6500.0; // e.g. cracked lighting lens
+    currentSecurityDeposit = Math.max(0, currentSecurityDeposit - penalty);
+    const depositEl = document.getElementById('entDepositHeld');
+    if (depositEl) depositEl.textContent = formatCurrency(currentSecurityDeposit);
+
+    const logEl = document.getElementById('entDepositLog');
+    if (logEl) {
+        logEl.className = 'alert-box warning-alert';
+        logEl.innerHTML = `
+            <div class="alert-text">
+                ⚠️ <b>Client Damage Logged:</b> 1x Stage Par Can Lens cracked during load-out. Penalty of <b>${formatCurrency(penalty)}</b> deducted from security deposit. Net refundable balance: <b>${formatCurrency(currentSecurityDeposit)}</b>.
+            </div>
+        `;
+    }
+    showToast(`Logged ₹6,500 damage penalty. Updated deposit: ${formatCurrency(currentSecurityDeposit)}`, 'warning');
+}
+
+function releaseSecurityDeposit() {
+    const depositEl = document.getElementById('entDepositHeld');
+    if (depositEl) depositEl.textContent = '₹0.00 (Refunded)';
+
+    const logEl = document.getElementById('entDepositLog');
+    if (logEl) {
+        logEl.className = 'alert-box';
+        logEl.style.backgroundColor = '#ECFDF5';
+        logEl.style.border = '1px solid #A7F3D0';
+        logEl.style.color = '#065F46';
+        logEl.innerHTML = `
+            <div class="alert-text">
+                ✅ <b>Clean Gatepass Signed:</b> All gear verified and accounted for. Refund Voucher of <b>${formatCurrency(currentSecurityDeposit)}</b> generated for client.
+            </div>
+        `;
+    }
+    showToast('Clean Return Gatepass issued! Security deposit released.', 'success');
+}
+
+function exportEnterpriseQuoteCSV() {
+    if (!currentEnterprisePackages || currentEnterprisePackages.length === 0) {
+        showToast('Generate a proposal first', 'warning');
+        return;
+    }
+
+    const gold = currentEnterprisePackages.find(p => p.packageTier === 'GOLD_BALANCED') || currentEnterprisePackages[0];
+    const rows = [
+        ["Category", "Gear & Services", "Quantity", "Sourcing Type", "Vendor/Warehouse", "Internal Direct Cost (INR)", "Client Billable Rate (INR)", "Net Gross Profit (INR)"],
+        ...gold.itemizedList.map(i => [
+            `"${i.category}"`, `"${i.itemName}"`, i.quantity, `"${i.sourcingType}"`, `"${i.partnerVendor}"`, i.internalCost, i.clientBillingRate, (i.clientBillingRate - i.internalCost)
+        ])
+    ];
+
+    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `EventLoop_Enterprise_Quotation_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Client Quotation CSV exported!', 'success');
+}
+
 

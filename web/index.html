@@ -46,6 +46,7 @@
             <button class="nav-tab" onclick="switchTab('reservations')">📋 Bookings & Returns</button>
             <button class="nav-tab" onclick="switchTab('reports')">📈 Audit Reports</button>
             <button class="nav-tab" onclick="switchTab('optimizer')">💰 AI Budget Optimizer</button>
+            <button class="nav-tab" onclick="switchTab('enterprise')">🏢 Event Planner Studio</button>
             <button class="nav-tab" onclick="switchTab('oop')">🧪 OOP Interfaces Lab</button>
         </div>
     </nav>
@@ -505,6 +506,120 @@
                             <tr><td colspan="6" class="text-center text-muted">Run optimizer above to view line-item comparison.</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 10: PRIVATE EVENT PLANNER & COMMERCIAL QUOTATION STUDIO -->
+        <section id="tab-enterprise" class="tab-pane">
+            <div class="hero-banner mb-3" style="background: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%);">
+                <div class="hero-content" style="max-width: 75%;">
+                    <h1 class="hero-title">🏢 Private Event Planner & Commercial AI Quotation Studio</h1>
+                    <p class="hero-desc">Designed for event management companies, wedding planners & concert producers. Synthesize client proposals, calculate profit margins, track partner vendor cross-hiring, and manage client damage security deposits.</p>
+                </div>
+                <div class="hero-callout" style="min-width: 240px; background: rgba(255, 255, 255, 0.12);">
+                    <div class="callout-tag">PROFIT MARGIN ENGINE</div>
+                    <div class="callout-value" style="font-size: 26px; color: #A7F3D0;">48% – 68%</div>
+                    <div class="callout-note">Average net gross margin across packages</div>
+                </div>
+            </div>
+
+            <div class="dashboard-split mb-3">
+                <!-- CLIENT INTAKE FORM -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">💼 Client Intake & Production Specifications</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-2">
+                            <label for="entClientName">Client / Production Name:</label>
+                            <input type="text" id="entClientName" class="form-control" value="Vikram & Ananya Grand Wedding">
+                        </div>
+                        <div class="form-row mb-2">
+                            <div class="form-group">
+                                <label for="entEventType">Event Production Type:</label>
+                                <select id="entEventType" class="form-control">
+                                    <option value="Luxury Wedding & Reception">Luxury Wedding & Reception</option>
+                                    <option value="Corporate Brand Launch & Gala">Corporate Brand Launch & Gala</option>
+                                    <option value="Live Concert & DJ Night">Live Concert & DJ Night</option>
+                                    <option value="Trade Expo & Fashion Showcase">Trade Expo & Fashion Showcase</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="entGuests">Expected Attendees:</label>
+                                <input type="number" id="entGuests" class="form-control" value="450" step="50">
+                            </div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="entBudget">Target Client Budget (₹):</label>
+                            <input type="number" id="entBudget" class="form-control" value="300000" min="50000" step="10000">
+                        </div>
+                        <button id="btnRunEnterprise" class="btn btn-purple btn-block" onclick="runEnterpriseQuotation()">
+                            ⚡ Generate Commercial Packages & Profit Margins
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PACKAGES COMPARISON SNAPSHOT -->
+                <div class="card">
+                    <div class="card-header d-flex justify-between items-center">
+                        <h3 class="card-title">💎 Client Quotation Packages</h3>
+                        <span class="badge badge-purple">AI Commercial Proposal</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="enterpriseCardsContainer" class="d-flex flex-col gap-2">
+                            <div class="text-center text-muted p-4">Click "Generate Commercial Packages" to compute client proposals.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEMIZED PRODUCTION GEAR & CROSS-HIRING SPLIT TABLE -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-between items-center">
+                    <h3 class="card-title">📦 Production Line-Item Breakdown (In-House vs Vendor Cross-Hire)</h3>
+                    <button class="btn btn-outline btn-sm" onclick="exportEnterpriseQuoteCSV()">📥 Export Client Quotation CSV</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="tblEnterpriseBreakdown">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Gear & Services</th>
+                                <th>Quantity</th>
+                                <th>Sourcing Source</th>
+                                <th>Company Internal Cost</th>
+                                <th>Client Billable Rate</th>
+                                <th>Gross Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblEnterpriseBody">
+                            <tr><td colspan="7" class="text-center text-muted">Generate quotation above to view itemized pricing.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECURITY DEPOSIT & DAMAGE RECONCILIATION GATEPASS -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🔒 Client Damage Security Deposit & Return Gatepass Reconciliation</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-between items-center mb-3">
+                        <div>
+                            <b>Security Deposit Held:</b> <span id="entDepositHeld" class="text-success font-bold" style="font-size: 16px;">₹30,000.00</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-danger btn-sm" onclick="simulateDamagePenalty()">⚠️ Log Client Damage Penalty</button>
+                            <button class="btn btn-success btn-sm" onclick="releaseSecurityDeposit()">✅ Release Clean Deposit Refund</button>
+                        </div>
+                    </div>
+                    <div id="entDepositLog" class="alert-box warning-alert">
+                        <div class="alert-text">
+                            Security deposit protected under digital contract. Any equipment lost, cracked, or returned dirty will automatically deduct repair charges before gatepass signoff.
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

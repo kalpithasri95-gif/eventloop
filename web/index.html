@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EventLoop – Smart Event Resource Reuse & Pre-Purchase Decision System</title>
+    <meta name="description" content="AI & Decision-Support System for Campus Event Resource Reuse, Sourcing Decisions, Verification Gates, and Return Inspections.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- TOP APP BAR -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <span class="brand-icon">🔄</span>
+                <div class="brand-text">
+                    <span class="brand-title">EVENTLOOP</span>
+                    <span class="brand-subtitle">Smart Resource Reuse & Decision System</span>
+                </div>
+            </div>
+
+            <div class="header-user">
+                <div id="userProfileBadge" class="user-badge">
+                    <span class="user-avatar">👤</span>
+                    <span id="userName">Prof. Rajesh Sharma</span>
+                    <span id="userRole" class="role-pill role-admin">ADMIN</span>
+                </div>
+                <button id="btnSwitchUser" class="btn btn-outline-light btn-sm" onclick="openLoginModal()">Switch Role</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- HORIZONTAL TAB NAVIGATION -->
+    <nav class="nav-bar">
+        <div class="nav-container">
+            <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('catalog')">📦 Resource Catalogue</button>
+            <button class="nav-tab" onclick="switchTab('verification')">🛡️ Verification Audit</button>
+            <button class="nav-tab" onclick="switchTab('events')">📅 Event Lifecycle</button>
+            <button class="nav-tab" onclick="switchTab('matching')">⚡ Smart Matcher & Decisions</button>
+            <button class="nav-tab" onclick="switchTab('reservations')">📋 Bookings & Returns</button>
+            <button class="nav-tab" onclick="switchTab('reports')">📈 Audit Reports</button>
+            <button class="nav-tab" onclick="switchTab('oop')">🧪 OOP Interfaces Lab</button>
+        </div>
+    </nav>
+
+    <!-- MAIN APP CONTENT -->
+    <main class="main-content">
+
+        <!-- TAB 1: DASHBOARD -->
+        <section id="tab-dashboard" class="tab-pane active">
+            <!-- HERO BANNER -->
+            <div class="hero-banner">
+                <div class="hero-content">
+                    <h1 class="hero-title">Smart Campus Resource Reuse & Pre-Purchase Intelligence</h1>
+                    <p class="hero-desc">Protecting institutional procurement budgets by evaluating reuse, repair, borrowing, and renting options before purchasing new assets.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-success" onclick="openCreateEventModal()">+ Create Event</button>
+                        <button class="btn btn-light" onclick="openAddResourceModal()">+ Add Resource</button>
+                        <button class="btn btn-warning" onclick="switchTab('matching')">⚡ Run Smart Matcher</button>
+                        <button class="btn btn-ghost" onclick="loadDashboard()">🔄 Refresh</button>
+                    </div>
+                </div>
+                <div class="hero-callout">
+                    <div class="callout-tag">POTENTIAL PURCHASE AVOIDED</div>
+                    <div id="heroAvoidedValue" class="callout-value">₹0.00</div>
+                    <div class="callout-note">Direct budget preserved for campus events</div>
+                </div>
+            </div>
+
+            <!-- 12 KPI CARDS -->
+            <div class="kpi-grid">
+                <div class="kpi-card accent-primary">
+                    <div class="kpi-header"><span class="kpi-label">Total Resources</span><span class="kpi-icon">📦</span></div>
+                    <div id="kpiTotal" class="kpi-val">0</div>
+                    <div class="kpi-sub">Across campus categories</div>
+                </div>
+                <div class="kpi-card accent-success">
+                    <div class="kpi-header"><span class="kpi-label">Available Stock</span><span class="kpi-icon">✅</span></div>
+                    <div id="kpiAvailable" class="kpi-val text-success">0</div>
+                    <div class="kpi-sub">Verified & ready to reserve</div>
+                </div>
+                <div class="kpi-card accent-blue">
+                    <div class="kpi-header"><span class="kpi-label">Resources In Use</span><span class="kpi-icon">⏳</span></div>
+                    <div id="kpiInUse" class="kpi-val text-blue">0</div>
+                    <div class="kpi-sub">Dispatched to active events</div>
+                </div>
+                <div class="kpi-card accent-danger">
+                    <div class="kpi-header"><span class="kpi-label">Under Repair</span><span class="kpi-icon">🛠️</span></div>
+                    <div id="kpiUnderRepair" class="kpi-val text-danger">0</div>
+                    <div class="kpi-sub">Servicing / fixing in progress</div>
+                </div>
+                <div class="kpi-card accent-warning">
+                    <div class="kpi-header"><span class="kpi-label">Verification Due</span><span class="kpi-icon">🛡️</span></div>
+                    <div id="kpiVerificationDue" class="kpi-val text-warning">0</div>
+                    <div class="kpi-sub">Audit expired or pending</div>
+                </div>
+                <div class="kpi-card accent-purple">
+                    <div class="kpi-header"><span class="kpi-label">Active Events</span><span class="kpi-icon">📅</span></div>
+                    <div id="kpiActiveEvents" class="kpi-val text-purple">0</div>
+                    <div class="kpi-sub">Scheduled or in progress</div>
+                </div>
+                <div class="kpi-card accent-warning">
+                    <div class="kpi-header"><span class="kpi-label">Pending Returns</span><span class="kpi-icon">🔄</span></div>
+                    <div id="kpiPendingReturns" class="kpi-val text-warning">0</div>
+                    <div class="kpi-sub">Awaiting return & post-inspection</div>
+                </div>
+                <div class="kpi-card accent-danger">
+                    <div class="kpi-header"><span class="kpi-label">Overdue Returns</span><span class="kpi-icon">🚨</span></div>
+                    <div id="kpiOverdue" class="kpi-val text-danger">0</div>
+                    <div class="kpi-sub">Past return deadline</div>
+                </div>
+                <div class="kpi-card accent-success">
+                    <div class="kpi-header"><span class="kpi-label">Purchase Avoided</span><span class="kpi-icon">💰</span></div>
+                    <div id="kpiPurchaseAvoided" class="kpi-val text-success">₹0</div>
+                    <div class="kpi-sub">Saved by reusing existing stock</div>
+                </div>
+                <div class="kpi-card accent-blue">
+                    <div class="kpi-header"><span class="kpi-label">Resources Reused</span><span class="kpi-icon">🔁</span></div>
+                    <div id="kpiReusedCount" class="kpi-val">0</div>
+                    <div class="kpi-sub">Units allocated to events</div>
+                </div>
+                <div class="kpi-card accent-primary">
+                    <div class="kpi-header"><span class="kpi-label">Total Asset Value</span><span class="kpi-icon">🏛️</span></div>
+                    <div id="kpiAssetVal" class="kpi-val">₹0</div>
+                    <div class="kpi-sub">Capital inventory balance</div>
+                </div>
+                <div class="kpi-card accent-warning">
+                    <div class="kpi-header"><span class="kpi-label">Est. Repair Needs</span><span class="kpi-icon">🔧</span></div>
+                    <div id="kpiRepairNeeds" class="kpi-val text-warning">₹0</div>
+                    <div class="kpi-sub">Maintenance liabilities</div>
+                </div>
+            </div>
+
+            <!-- INVENTORY HEALTH PROGRESS BAR -->
+            <div class="card my-3">
+                <div class="card-header">
+                    <h3 class="card-title">Live Campus Inventory Operational Health</h3>
+                </div>
+                <div class="card-body">
+                    <div class="health-progress-bar">
+                        <div id="barAvailable" class="health-seg seg-avail" title="Available"></div>
+                        <div id="barInUse" class="health-seg seg-inuse" title="In Use"></div>
+                        <div id="barRepair" class="health-seg seg-repair" title="Under Repair"></div>
+                        <div id="barVerif" class="health-seg seg-verif" title="Verification Due"></div>
+                    </div>
+                    <div class="health-legend">
+                        <span class="legend-item"><span class="dot dot-avail"></span> <span id="legAvail">Available: 0</span></span>
+                        <span class="legend-item"><span class="dot dot-inuse"></span> <span id="legInUse">In Use: 0</span></span>
+                        <span class="legend-item"><span class="dot dot-repair"></span> <span id="legRepair">Under Repair: 0</span></span>
+                        <span class="legend-item"><span class="dot dot-verif"></span> <span id="legVerif">Verification Due: 0</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TWO COLUMN TABLES: UPCOMING EVENTS & TIMELINE -->
+            <div class="dashboard-split">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Upcoming Campus Events & Status</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Event ID</th><th>Event Name</th><th>Date</th><th>Status</th><th>Avoided Cost</th></tr>
+                            </thead>
+                            <tbody id="tblDashboardEvents"><tr><td colspan="5" class="text-center">Loading events...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Live Resource Audit Movement Log</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Time</th><th>Resource ID</th><th>Action</th><th>Audited By</th><th>Details</th></tr>
+                            </thead>
+                            <tbody id="tblDashboardHistory"><tr><td colspan="5" class="text-center">Loading audit log...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: RESOURCE CATALOGUE -->
+        <section id="tab-catalog" class="tab-pane">
+            <div class="card mb-3">
+                <div class="filter-bar">
+                    <input type="text" id="catSearch" class="form-control" placeholder="Search resources by name, ID, specs..." oninput="loadCatalog()">
+                    <select id="catCategory" class="form-control" onchange="loadCatalog()">
+                        <option value="All Categories">All Categories</option>
+                        <option value="Audio/Visual">Audio/Visual</option>
+                        <option value="Electrical">Electrical</option>
+                        <option value="Furniture">Furniture</option>
+                        <option value="Equipment">Equipment</option>
+                        <option value="Decoration">Decoration</option>
+                        <option value="Stationery">Stationery</option>
+                    </select>
+                    <select id="catStatus" class="form-control" onchange="loadCatalog()">
+                        <option value="All Statuses">All Statuses</option>
+                        <option value="AVAILABLE">AVAILABLE</option>
+                        <option value="RESERVED">RESERVED</option>
+                        <option value="IN_USE">IN_USE</option>
+                        <option value="UNDER_REPAIR">UNDER_REPAIR</option>
+                        <option value="REPURPOSE_REQUIRED">REPURPOSE_REQUIRED</option>
+                        <option value="MISSING">MISSING</option>
+                        <option value="RETIRED">RETIRED</option>
+                    </select>
+                    <select id="catVerification" class="form-control" onchange="loadCatalog()">
+                        <option value="All">All Verifications</option>
+                        <option value="VERIFIED">VERIFIED</option>
+                        <option value="VERIFICATION_REQUIRED">VERIFICATION_REQUIRED</option>
+                        <option value="EXPIRED">EXPIRED</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="openAddResourceModal()">+ Add Resource</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Resource Name</th><th>Category</th><th>Available</th>
+                                <th>Condition</th><th>Status</th><th>Verification</th><th>Storage Location</th>
+                                <th>Purchase Cost</th><th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblCatalog"><tr><td colspan="10" class="text-center">Loading inventory...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: VERIFICATION GATE -->
+        <section id="tab-verification" class="tab-pane">
+            <div class="alert-box warning-alert mb-3">
+                <div class="alert-icon">🛡️</div>
+                <div class="alert-text">
+                    <strong>Mandatory Verification Required Gate:</strong> Any resource whose periodic physical audit has expired or is unverified is strictly <b>blocked from reservations</b> until certified by the Store Manager.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Resources Requiring Physical Audit & Recertification</h3></div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Resource ID</th><th>Name</th><th>Category</th><th>Current Status</th><th>Verification</th><th>Last Verified</th><th>Next Due Date</th><th>Location</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="tblVerificationQueue"><tr><td colspan="9" class="text-center">Loading audit queue...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: EVENT LIFECYCLE -->
+        <section id="tab-events" class="tab-pane">
+            <div class="card mb-3">
+                <div class="d-flex justify-between items-center">
+                    <div>
+                        <h2>Campus Event Scheduling & Asset Allocation</h2>
+                        <p class="text-muted">Track events from draft through requirement matching, checkouts, and mandatory closure reconciliation.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openCreateEventModal()">+ Create Event</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Event ID</th><th>Event Name</th><th>Organizer</th><th>Dept / Club</th><th>Type</th><th>Date & Time</th><th>Venue</th><th>Status</th><th>Avoided Cost</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="tblEvents"><tr><td colspan="10" class="text-center">Loading events...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: SMART MATCHING & PRE-PURCHASE DECISIONS -->
+        <section id="tab-matching" class="tab-pane">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h2>Smart Inventory Matching & 5-Way Sourcing Decision Engine</h2>
+                    <p class="text-muted">Analyzes category, name similarity, quantity availability, verification status, condition ratings, and reservation conflicts.</p>
+                </div>
+                <div class="card-body">
+                    <div class="matching-controls">
+                        <div class="form-group">
+                            <label>Select Campus Event:</label>
+                            <select id="matchEventSelect" class="form-control" onchange="onMatchingEventChanged()"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Select Event Requirement:</label>
+                            <select id="matchReqSelect" class="form-control" onchange="runSmartMatching()"></select>
+                        </div>
+                        <div class="form-group" style="align-self: flex-end;">
+                            <button class="btn btn-warning" onclick="openAddRequirementModal()">+ Add Requirement</button>
+                        </div>
+                    </div>
+                    <div id="matchingSummaryTag" class="tag-banner mt-2">Select an event and requirement to compute inventory compatibility.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-between items-center">
+                    <h3>Compatibility Match Results</h3>
+                    <button class="btn btn-purple" onclick="openPrePurchaseDecisionModal()">⚖ Open Pre-Purchase Decision Matrix</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Match Type</th><th>Score</th><th>Resource ID</th><th>Name</th><th>Available</th><th>Condition</th><th>Status</th><th>Verification</th><th>Explanation</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="tblMatches"><tr><td colspan="10" class="text-center">Select requirement above to see matches.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 6: RESERVATIONS, CHECKOUT & RETURNS -->
+        <section id="tab-reservations" class="tab-pane">
+            <div class="card mb-3">
+                <div class="filter-bar">
+                    <label>Filter Bookings:</label>
+                    <select id="resStatusFilter" class="form-control" onchange="loadReservations()">
+                        <option value="All">All Reservations</option>
+                        <option value="REQUESTED">REQUESTED</option>
+                        <option value="APPROVED">APPROVED</option>
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                        <option value="OVERDUE">OVERDUE</option>
+                    </select>
+                    <button class="btn btn-outline" onclick="loadReservations()">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Res ID</th><th>Event ID</th><th>Resource ID</th><th>Name</th><th>Qty</th><th>Start Time</th><th>End Time</th><th>Deadline</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="tblReservations"><tr><td colspan="10" class="text-center">Loading reservations...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 7: REPORTS & ANALYTICS -->
+        <section id="tab-reports" class="tab-pane">
+            <div class="card mb-3">
+                <div class="filter-bar">
+                    <label>Select Report Type:</label>
+                    <select id="reportSelect" class="form-control" onchange="loadReport()">
+                        <option value="0">1. Available Resources Report</option>
+                        <option value="1">2. Resources Under Repair Report</option>
+                        <option value="2">3. Verification Required Audit Report</option>
+                        <option value="3">4. Event Resource Usage Report</option>
+                        <option value="4">5. Reservation Conflict & Bookings Report</option>
+                        <option value="5">6. Overdue Return Report</option>
+                        <option value="6">7. Resource Reuse Classification Report</option>
+                        <option value="7">8. Repair Cost Liability Report</option>
+                        <option value="8">9. Potential Purchase Cost Avoidance Report</option>
+                        <option value="9">10. Campus Resource Audit Movement History</option>
+                    </select>
+                    <button class="btn btn-success" onclick="downloadReportCSV()">📥 Export to CSV</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="data-table" id="tblReports">
+                        <thead id="tblReportHead"></thead>
+                        <tbody id="tblReportBody"><tr><td class="text-center">Loading report...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 8: OOP & INTERFACES LAB -->
+        <section id="tab-oop" class="tab-pane">
+            <div class="card mb-3">
+                <h2>OOP Architecture, Java Interfaces & Polymorphism Live Lab</h2>
+                <p class="text-muted">Demonstrates Multiple Interface Implementation, Dynamic Method Dispatch, and Subtype Polymorphism in action.</p>
+            </div>
+
+            <div class="dashboard-split">
+                <div class="card">
+                    <div class="card-header"><h3>Select Target Object to Inspect:</h3></div>
+                    <div class="form-group mb-3">
+                        <select id="oopChoice" class="form-control">
+                            <option value="0">1. Projector (AudioVisual -> Resource, Reservable, Repairable, Reusable)</option>
+                            <option value="1">2. ExtensionCable (Electrical -> Resource, Reservable, Repairable, Reusable)</option>
+                            <option value="2">3. Table (Furniture -> Resource, Reservable, Reusable)</option>
+                            <option value="3">4. CustomPrintedBanner (Decoration -> Resource, Reusable [Repurpose])</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="runOopDemo()">Invoke Polymorphic Method Dispatch</button>
+                    
+                    <div class="oop-hierarchy-box mt-3">
+                        <h4>Interface Implementation Summary:</h4>
+                        <ul>
+                            <li><b>Projector:</b> Resource, Reservable, Repairable, Reusable</li>
+                            <li><b>ExtensionCable:</b> Resource, Reservable, Repairable, Reusable (Strict safety)</li>
+                            <li><b>Table / Chair:</b> Resource, Reservable, Reusable</li>
+                            <li><b>CustomPrintedBanner:</b> Resource, Reusable (Repurpose Output)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h3>Live JVM Polymorphic Console Output</h3></div>
+                    <pre id="oopConsole" class="terminal-box">Click 'Invoke Polymorphic Method Dispatch' to run.</pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- LOGIN / SWITCH ROLE MODAL -->
+    <div id="modalLogin" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🔄 Sign In to EventLoop</h3>
+                <span class="modal-close" onclick="closeModal('modalLogin')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="demo-role-box mb-3">
+                    <label class="text-muted small">⚡ One-Click Demo Role Login:</label>
+                    <div class="d-flex flex-col gap-2 mt-1">
+                        <button class="btn btn-outline" onclick="quickLogin('admin', 'admin123')">👑 Store Manager / Admin (Prof. Rajesh Sharma)</button>
+                        <button class="btn btn-outline" onclick="quickLogin('organizer', 'org123')">🎯 IEEE Club Organizer (Priya Raman)</button>
+                        <button class="btn btn-outline" onclick="quickLogin('cultural', 'cult123')">🎭 Cultural Committee (Karthik Sundar)</button>
+                    </div>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Username / Email:</label>
+                    <input type="text" id="loginUsername" class="form-control" value="admin">
+                </div>
+                <div class="form-group mb-3">
+                    <label>Password (Masked):</label>
+                    <input type="password" id="loginPassword" class="form-control" value="admin123">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="submitLogin()">Sign In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE EVENT MODAL -->
+    <div id="modalCreateEvent" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📅 Create Campus Event</h3>
+                <span class="modal-close" onclick="closeModal('modalCreateEvent')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-2"><label>Event ID (e.g. EVT-2026-004):</label><input type="text" id="evtId" class="form-control"></div>
+                <div class="form-group mb-2"><label>Event Name:</label><input type="text" id="evtName" class="form-control" placeholder="Annual Science Exhibition"></div>
+                <div class="form-group mb-2"><label>Organizer Name:</label><input type="text" id="evtOrg" class="form-control" value="Priya Raman"></div>
+                <div class="form-group mb-2"><label>Department / Club:</label><input type="text" id="evtDept" class="form-control" value="IEEE Branch"></div>
+                <div class="form-group mb-2">
+                    <label>Event Type:</label>
+                    <select id="evtType" class="form-control">
+                        <option>Technical</option><option>Cultural</option><option>Sports</option><option>Workshop</option><option>Seminar</option><option>Conference</option>
+                    </select>
+                </div>
+                <div class="form-row mb-2">
+                    <div class="form-group"><label>Date (YYYY-MM-DD):</label><input type="date" id="evtDate" class="form-control"></div>
+                    <div class="form-group"><label>Start Time:</label><input type="text" id="evtStart" class="form-control" value="09:00"></div>
+                    <div class="form-group"><label>End Time:</label><input type="text" id="evtEnd" class="form-control" value="17:00"></div>
+                </div>
+                <div class="form-group mb-3"><label>Campus Location / Venue:</label><input type="text" id="evtLoc" class="form-control" value="Main Auditorium"></div>
+                <button class="btn btn-primary btn-block" onclick="submitCreateEvent()">Create Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD RESOURCE MODAL -->
+    <div id="modalAddResource" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📦 Register New Campus Asset</h3>
+                <span class="modal-close" onclick="closeModal('modalAddResource')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-2"><label>Resource ID (e.g. EL-AUD-006):</label><input type="text" id="resId" class="form-control"></div>
+                <div class="form-group mb-2"><label>Resource Name:</label><input type="text" id="resName" class="form-control" placeholder="Epson Laser Projector"></div>
+                <div class="form-group mb-2">
+                    <label>Category:</label>
+                    <select id="resCategory" class="form-control">
+                        <option>Audio/Visual</option><option>Electrical</option><option>Furniture</option><option>Equipment</option><option>Decoration</option><option>Stationery</option>
+                    </select>
+                </div>
+                <div class="form-row mb-2">
+                    <div class="form-group"><label>Total Quantity:</label><input type="number" id="resQty" class="form-control" value="2"></div>
+                    <div class="form-group"><label>Condition (1-5):</label><input type="number" id="resCond" class="form-control" min="1" max="5" value="5"></div>
+                    <div class="form-group"><label>Unit Cost (₹):</label><input type="number" id="resCost" class="form-control" value="35000"></div>
+                </div>
+                <div class="form-group mb-2"><label>Storage Location (Building - Room - Rack):</label><input type="text" id="resLoc" class="form-control" value="Media Center - Room 102 - Rack A"></div>
+                <div class="form-group mb-3"><label>Technical Specifications:</label><input type="text" id="resSpecs" class="form-control" placeholder="HDMI, 4200 Lumens, 1080p"></div>
+                <button class="btn btn-primary btn-block" onclick="submitAddResource()">Register Resource</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRE-PURCHASE DECISION SUPPORT MODAL -->
+    <div id="modalDecision" class="modal-overlay">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3>⚖ Pre-Purchase Decision Matrix & Cost Avoidance</h3>
+                <span class="modal-close" onclick="closeModal('modalDecision')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="avoidance-callout mb-3">
+                    <span class="text-muted">Potential Purchase Avoided:</span>
+                    <span id="decisionAvoidedVal" class="avoided-big">₹0.00</span>
+                </div>
+
+                <div class="table-responsive mb-3">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Sourcing Option</th><th>Cost (₹)</th><th>Campus Inventory Impact</th><th>Viability & Lead Time</th></tr>
+                        </thead>
+                        <tbody id="tblDecisionMatrix"></tbody>
+                    </table>
+                </div>
+
+                <div class="recommendation-card">
+                    <div class="d-flex justify-between items-center mb-1">
+                        <h4>System Decision Recommendation: <span id="decisionBadge" class="badge">DIRECT_REUSE</span></h4>
+                        <span id="decisionSavings" class="text-success font-bold">Estimated Savings: ₹0</span>
+                    </div>
+                    <p id="decisionReasonText" class="recommendation-text"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT (PRE-USE INSPECTION) MODAL -->
+    <div id="modalCheckout" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📋 Pre-Use Inspection Checklist & Handover</h3>
+                <span class="modal-close" onclick="closeModal('modalCheckout')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="chkResId">
+                <p>Auditing resource before physical handover to event organizer:</p>
+                <div class="form-group mb-2">
+                    <label>Verified Physical Condition (1-5):</label>
+                    <input type="number" id="chkCond" class="form-control" min="1" max="5" value="5">
+                </div>
+                <div class="form-group mb-2">
+                    <label><input type="checkbox" id="chkSafety" checked> Power cable, electrical safety & accessories intact</label>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Inspector Notes:</label>
+                    <input type="text" id="chkNotes" class="form-control" value="Certified operational condition before dispatch">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="submitCheckout()">Certify & Dispatch Resource</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RETURN (POST-USE INSPECTION) MODAL -->
+    <div id="modalReturn" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🔄 Post-Use Return Inspection & Reconciliation</h3>
+                <span class="modal-close" onclick="closeModal('modalReturn')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="retResId">
+                <div class="form-group mb-2">
+                    <label>Returned Quantity:</label>
+                    <input type="number" id="retQty" class="form-control" value="1">
+                </div>
+                <div class="form-group mb-2">
+                    <label>Post-Use Condition Rating (1-5):</label>
+                    <input type="number" id="retCond" class="form-control" min="1" max="5" value="4">
+                </div>
+                <div class="form-group mb-2">
+                    <label>Destination Status:</label>
+                    <select id="retOutcome" class="form-control">
+                        <option value="AVAILABLE">AVAILABLE (Good for next event)</option>
+                        <option value="UNDER_REPAIR">UNDER_REPAIR (Minor damage)</option>
+                        <option value="MISSING">MISSING (Unaccounted items)</option>
+                        <option value="REPURPOSE_REQUIRED">REPURPOSE_REQUIRED</option>
+                    </select>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Return Notes / Damage details:</label>
+                    <input type="text" id="retNotes" class="form-control" value="Clean return; no damage found">
+                </div>
+                <button class="btn btn-success btn-block" onclick="submitReturn()">Complete Return & Reconcile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EVENT CLOSURE AUDIT MODAL -->
+    <div id="modalCloseEvent" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🔒 Event Closure Audit Guard</h3>
+                <span class="modal-close" onclick="closeModal('modalCloseEvent')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="closeEvtId">
+                <div class="alert-box warning-alert mb-2">
+                    <div class="alert-text">
+                        <b>Mandatory Rule:</b> Event cannot be closed if any item is still checked out, overdue, or awaiting post-use inspection.
+                    </div>
+                </div>
+                <p id="closeEvtMessage">Reconciling event accounts...</p>
+                <div class="d-flex gap-2 justify-end mt-3">
+                    <button class="btn btn-outline" onclick="closeModal('modalCloseEvent')">Cancel</button>
+                    <button id="btnExecuteClose" class="btn btn-danger" onclick="executeEventClose()">Proceed with Closure</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

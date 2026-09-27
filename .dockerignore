@@ -1,0 +1,8 @@
+.git
+.gitignore
+.antigravity-ide
+bin/
+*.log
+*.db-journal
+*.tmp
+sources.txt

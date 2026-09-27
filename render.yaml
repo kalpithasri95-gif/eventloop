@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: eventloop-web
+    env: docker
+    plan: free
+    region: oregon
+    autoDeploy: true
+    dockerfilePath: Dockerfile
+    healthCheckPath: /api/dashboard
+    envVars:
+      - key: PORT
+        value: 8080

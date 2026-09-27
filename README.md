@@ -396,3 +396,5 @@ The system queries active bookings overlapping the requested date/time window an
 2. **Automated Email/SMS Notifications**: Send automated reminders to organizers 2 hours before the return deadline.
 3. **Inter-Campus Fleet Logistics**: Multi-campus resource borrowing with GPS van routing.
 4. **IoT Asset Tracking**: BLE beacon tags inside high-value audio-visual equipment to trigger proximity alerts when removed from the auditorium.
+#   e v e n t l o o p  
+ 

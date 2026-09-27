@@ -76,6 +76,7 @@ function switchTab(tabName) {
     else if (tabName === 'matching') populateMatchingDropdowns();
     else if (tabName === 'reservations') loadReservations();
     else if (tabName === 'reports') loadReport();
+    else if (tabName === 'optimizer') { initOptimizerEvents(); runBudgetOptimizer(); }
 }
 
 // ==================== USER & PRODUCTION AUTH ====================
@@ -990,3 +991,239 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 4000);
 }
+
+// ==================== 9. AI BUDGET OPTIMIZER & SCENARIOS ====================
+let currentScenarioPlans = [];
+
+async function initOptimizerEvents() {
+    try {
+        const res = await fetch('/api/events');
+        const events = await res.json();
+        const sel = document.getElementById('optEventSelect');
+        if (sel && events) {
+            sel.innerHTML = '<option value="">General Pre-Purchase Optimization</option>' +
+                events.map(e => `<option value="${e.eventId}">${e.eventId} - ${e.eventName} (${e.eventDate})</option>`).join('');
+        }
+    } catch (e) {
+        console.error('Failed to populate optimizer events:', e);
+    }
+}
+
+async function runBudgetOptimizer() {
+    const budgetVal = parseFloat(document.getElementById('optBudget')?.value) || 50000;
+    const itemsText = document.getElementById('optItemsText')?.value.trim() || '20 chairs, 3 projectors, 10 cables, 5 banners, 200 badges';
+    const btn = document.getElementById('btnRunOptimizer');
+    const container = document.getElementById('optimizerCardsContainer');
+    const tbody = document.getElementById('tblOptimizerBody');
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⚡ Computing Multi-Scenario Plans...';
+    }
+
+    try {
+        const res = await fetch('/api/optimizer/generate-plans', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ budget: String(budgetVal), itemsText: itemsText })
+        });
+        const plans = await res.json();
+        currentScenarioPlans = plans;
+
+        if (plans && plans.length > 0) {
+            // Render 3 Scenario Comparison Cards
+            container.innerHTML = plans.map(p => {
+                const planClass = p.planId === 'PLAN_A' ? 'scenario-plan-a' : (p.planId === 'PLAN_B' ? 'scenario-plan-b' : 'scenario-plan-c');
+                const barClass = p.planId === 'PLAN_A' ? 'bar-plan-a' : (p.planId === 'PLAN_B' ? 'bar-plan-b' : 'bar-plan-c');
+                const badgeClass = p.planId === 'PLAN_C' ? 'badge-success' : (p.planId === 'PLAN_B' ? 'badge-info' : 'badge-danger');
+                
+                return `
+                    <div class="scenario-card ${planClass}">
+                        <div class="scenario-header">
+                            <span class="scenario-title">${p.planName}</span>
+                            <span class="badge ${badgeClass}">${p.recommendationBadge}</span>
+                        </div>
+                        <div class="scenario-cost-row">
+                            <span class="scenario-cost ${p.planId === 'PLAN_C' ? 'text-success' : ''}">${formatCurrency(p.totalCost)}</span>
+                            <span class="scenario-saved text-success">Saved: ${formatCurrency(p.amountSaved)}</span>
+                        </div>
+                        <div class="scenario-progress">
+                            <div class="scenario-progress-bar ${barClass}" style="width: ${Math.min(100, p.budgetUtilizationPct)}%;"></div>
+                        </div>
+                        <div class="scenario-metrics">
+                            <span class="scenario-metric-item">⏱️ Lead Time: <b>${p.estimatedLeadTimeDays}d</b></span>
+                            <span class="scenario-metric-item">🎯 Feasibility: <b>${p.feasibilityScore}/100</b></span>
+                            <span class="scenario-metric-item">🔁 Reused: <b>${p.itemsReused}</b></span>
+                            ${p.itemsBorrowed > 0 ? `<span class="scenario-metric-item">🤝 Borrowed: <b>${p.itemsBorrowed}</b></span>` : ''}
+                            ${p.itemsRepaired > 0 ? `<span class="scenario-metric-item">🛠️ Repaired: <b>${p.itemsRepaired}</b></span>` : ''}
+                            ${p.itemsRented > 0 ? `<span class="scenario-metric-item">🚚 Rented: <b>${p.itemsRented}</b></span>` : ''}
+                            <span class="scenario-metric-item">🛒 Bought: <b>${p.itemsPurchased}</b></span>
+                        </div>
+                        <p class="small text-muted mt-1 mb-2">${p.rationale}</p>
+                        <button class="btn ${p.planId === 'PLAN_C' ? 'btn-success' : 'btn-outline'} btn-sm btn-block" onclick="applyScenarioPlan('${p.planId}')">
+                            ${p.planId === 'PLAN_C' ? '⭐ Select Plan C (Recommended)' : 'Select ' + p.planName.split('—')[0].trim()}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Render Itemized Comparison Table (Rows: Item names, Cols: Plan A vs Plan B vs Plan C)
+            const planA = plans.find(p => p.planId === 'PLAN_A') || plans[0];
+            const planB = plans.find(p => p.planId === 'PLAN_B') || plans[1];
+            const planC = plans.find(p => p.planId === 'PLAN_C') || plans[2];
+
+            if (planA && planA.itemBreakdown) {
+                tbody.innerHTML = planA.itemBreakdown.map((itemA, idx) => {
+                    const itemB = planB?.itemBreakdown?.[idx] || {};
+                    const itemC = planC?.itemBreakdown?.[idx] || {};
+
+                    return `
+                        <tr>
+                            <td><b>${itemA.itemName}</b></td>
+                            <td><b>${itemA.quantity}</b></td>
+                            <td class="text-danger font-bold">${formatCurrency(itemA.totalCost)}<br><span class="small text-muted">${itemA.sourcingMethod}</span></td>
+                            <td class="text-blue font-bold">${formatCurrency(itemB.totalCost || 0)}<br><span class="small text-muted">${itemB.sourcingMethod || '-'}</span></td>
+                            <td class="text-success font-bold">${formatCurrency(itemC.totalCost || 0)}<br><span class="small text-muted">${itemC.sourcingMethod || '-'}</span></td>
+                            <td class="small">
+                                <b>Plan C Allocation:</b> ${itemC.inventorySource || '-'}<br>
+                                <span class="text-muted">${itemC.notes || ''}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (err) {
+        showToast('Optimizer error: ' + err.message, 'danger');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '⚡ Generate Optimized Scenarios';
+        }
+    }
+}
+
+function applyScenarioPlan(planId) {
+    const plan = currentScenarioPlans.find(p => p.planId === planId);
+    if (!plan) return;
+
+    const eventId = document.getElementById('optEventSelect')?.value || 'EVT-2026-101';
+    showToast(`✅ ${plan.planName} applied to ${eventId}! ₹${plan.amountSaved.toLocaleString('en-IN')} budget preserved.`, 'success');
+}
+
+function exportOptimizerCSV() {
+    if (!currentScenarioPlans || currentScenarioPlans.length === 0) {
+        showToast('Run the optimizer first to generate data', 'warning');
+        return;
+    }
+
+    const rows = [
+        ["Scenario Plan", "Strategy Tag", "Total Cost (INR)", "Budget Saved (INR)", "Lead Time (Days)", "Feasibility Score", "Items Reused", "Items Borrowed", "Items Bought"],
+        ...currentScenarioPlans.map(p => [
+            `"${p.planName}"`, `"${p.strategyTag}"`, p.totalCost, p.amountSaved, p.estimatedLeadTimeDays, p.feasibilityScore, p.itemsReused, p.itemsBorrowed, p.itemsPurchased
+        ])
+    ];
+
+    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `EventLoop_Budget_Scenarios_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Budget Scenarios CSV exported!', 'success');
+}
+
+// ==================== 10. FLOATING AI COPILOT CHATBOT ====================
+function toggleAiChat() {
+    const win = document.getElementById('aiChatWindow');
+    if (!win) return;
+    win.classList.toggle('active');
+    if (win.classList.contains('active')) {
+        setTimeout(() => {
+            const inp = document.getElementById('aiChatInput');
+            if (inp) inp.focus();
+        }, 200);
+    }
+}
+
+function sendAiQuickPrompt(promptText) {
+    const inp = document.getElementById('aiChatInput');
+    if (inp) inp.value = promptText;
+    sendAiMessage();
+}
+
+async function sendAiMessage() {
+    const input = document.getElementById('aiChatInput');
+    const feed = document.getElementById('aiMessageFeed');
+    const sendBtn = document.getElementById('aiSendBtn');
+    const text = input ? input.value.trim() : '';
+
+    if (!text) return;
+
+    // Append user message
+    const userBubble = document.createElement('div');
+    userBubble.className = 'ai-message user-message';
+    userBubble.textContent = text;
+    feed.appendChild(userBubble);
+    input.value = '';
+    feed.scrollTop = feed.scrollHeight;
+
+    if (sendBtn) sendBtn.disabled = true;
+
+    // Append typing indicator
+    const typingBubble = document.createElement('div');
+    typingBubble.className = 'ai-message bot-message';
+    typingBubble.innerHTML = '<i>⚡ Analyzing campus constraints & budget models...</i>';
+    feed.appendChild(typingBubble);
+    feed.scrollTop = feed.scrollHeight;
+
+    try {
+        const res = await fetch('/api/ai/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+
+        typingBubble.remove();
+
+        const botBubble = document.createElement('div');
+        botBubble.className = 'ai-message bot-message';
+
+        // Format markdown boldly
+        let replyHtml = (data.reply || 'Analysis complete')
+            .replace(/\n\n/g, '<br><br>')
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\*(.*?)\*/g, '<i>$1</i>');
+
+        botBubble.innerHTML = `<div class="message-content">${replyHtml}</div>`;
+        feed.appendChild(botBubble);
+
+        // Update suggestion chips if provided
+        if (data.suggestionChips && data.suggestionChips.length > 0) {
+            const chipsContainer = document.getElementById('aiSuggestionChips');
+            if (chipsContainer) {
+                chipsContainer.innerHTML = data.suggestionChips.map(c => 
+                    `<button class="chip-btn" onclick="sendAiQuickPrompt('${c.replace(/'/g, "\\'")}')">${c}</button>`
+                ).join('');
+            }
+        }
+
+        // If scenarios returned, optionally auto-switch to optimizer tab
+        if (data.scenarioPlans && data.scenarioPlans.length > 0) {
+            currentScenarioPlans = data.scenarioPlans;
+            // update optimizer tab data in the background
+            runBudgetOptimizer();
+        }
+
+    } catch (err) {
+        typingBubble.innerHTML = '⚠️ AI Copilot connection error: ' + err.message;
+    } finally {
+        if (sendBtn) sendBtn.disabled = false;
+        feed.scrollTop = feed.scrollHeight;
+    }
+}
+

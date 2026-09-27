@@ -45,6 +45,7 @@
             <button class="nav-tab" onclick="switchTab('matching')">⚡ Smart Matcher & Decisions</button>
             <button class="nav-tab" onclick="switchTab('reservations')">📋 Bookings & Returns</button>
             <button class="nav-tab" onclick="switchTab('reports')">📈 Audit Reports</button>
+            <button class="nav-tab" onclick="switchTab('optimizer')">💰 AI Budget Optimizer</button>
             <button class="nav-tab" onclick="switchTab('oop')">🧪 OOP Interfaces Lab</button>
         </div>
     </nav>
@@ -425,6 +426,89 @@
             </div>
         </section>
 
+        <!-- TAB 9: AI BUDGET OPTIMIZER & SCENARIOS -->
+        <section id="tab-optimizer" class="tab-pane">
+            <div class="hero-banner mb-3" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #059669 100%);">
+                <div class="hero-content" style="max-width: 75%;">
+                    <h1 class="hero-title">💰 AI Event Budget Optimizer & Sourcing Synthesis</h1>
+                    <p class="hero-desc">Enter your total budget and requirements. EventLoop's deterministic AI evaluates live warehouse stock, repair liabilities, rental benchmarks, and inter-department loans to generate optimal procurement plans.</p>
+                </div>
+                <div class="hero-callout" style="min-width: 220px;">
+                    <div class="callout-tag">AI RECOMMENDATION</div>
+                    <div class="callout-value" style="font-size: 26px; color: #34D399;">Plan C</div>
+                    <div class="callout-note">Preserves up to 71% of event budget</div>
+                </div>
+            </div>
+
+            <div class="dashboard-split mb-3">
+                <!-- LEFT: INPUT CONTROLS -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📝 Organizer Budget & Requirements Input</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-2">
+                            <label for="optBudget">Total Allocated Event Budget (₹):</label>
+                            <input type="number" id="optBudget" class="form-control" value="50000" min="1000" step="500">
+                        </div>
+                        <div class="form-group mb-2">
+                            <label for="optItemsText">Required Items & Quantities:</label>
+                            <textarea id="optItemsText" class="form-control" rows="4" placeholder="e.g. 20 chairs, 3 projectors, 10 cables, 5 banners, 200 badges">20 chairs, 3 projectors, 10 cables, 5 banners, 200 badges</textarea>
+                            <span class="small text-muted">Supports natural language (e.g., 20 chairs, 3 projectors, 10 cables)</span>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="optEventSelect">Bind to Target Event (Optional):</label>
+                            <select id="optEventSelect" class="form-control">
+                                <option value="">General Pre-Purchase Optimization</option>
+                            </select>
+                        </div>
+                        <button id="btnRunOptimizer" class="btn btn-success btn-block" onclick="runBudgetOptimizer()">
+                            ⚡ Generate Optimized Scenarios
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RIGHT: SCENARIO SUMMARY COMPARISON -->
+                <div class="card">
+                    <div class="card-header d-flex justify-between items-center">
+                        <h3 class="card-title">📊 Scenario Comparison Snapshot</h3>
+                        <span class="badge badge-info">3 AI Plans Synthesized</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="optimizerCardsContainer" class="d-flex flex-col gap-2">
+                            <!-- Scenario cards will be populated dynamically -->
+                            <div class="text-center text-muted p-4">Click "Generate Optimized Scenarios" to compute plans.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DETAILED ITEMIZED COMPARISON TABLE -->
+            <div class="card">
+                <div class="card-header d-flex justify-between items-center">
+                    <h3 class="card-title">📋 Itemized Sourcing Allocation Matrix</h3>
+                    <button class="btn btn-outline btn-sm" onclick="exportOptimizerCSV()">📥 Export Comparison</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="tblOptimizerBreakdown">
+                        <thead>
+                            <tr>
+                                <th>Item Required</th>
+                                <th>Quantity</th>
+                                <th>Plan A (Buy New)</th>
+                                <th>Plan B (Hybrid)</th>
+                                <th>Plan C (Max Economy)</th>
+                                <th>Sourcing Allocation & Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblOptimizerBody">
+                            <tr><td colspan="6" class="text-center text-muted">Run optimizer above to view line-item comparison.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- ==================== MODALS ==================== -->
@@ -685,6 +769,54 @@
 
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toastContainer" class="toast-container"></div>
+
+    <!-- ==================== FLOATING AI COPILOT CHATBOT ==================== -->
+    <div id="aiChatWidget" class="ai-chat-widget">
+        <!-- CHAT LAUNCHER BUTTON -->
+        <button id="aiLauncherBtn" class="ai-launcher-btn" onclick="toggleAiChat()" title="Open EventLoop AI Assistant">
+            <span class="ai-launcher-icon">🤖</span>
+            <span class="ai-launcher-text">EventLoop AI Copilot</span>
+            <span class="ai-pulse-dot"></span>
+        </button>
+
+        <!-- CHAT WINDOW (EXPANDABLE) -->
+        <div id="aiChatWindow" class="ai-chat-window">
+            <!-- CHAT HEADER -->
+            <div class="ai-chat-header">
+                <div class="ai-chat-header-info">
+                    <div class="ai-avatar">🤖</div>
+                    <div>
+                        <div class="ai-title">EventLoop AI Copilot</div>
+                        <div class="ai-status"><span class="status-indicator"></span> Logistics & Budget Advisor</div>
+                    </div>
+                </div>
+                <button class="ai-close-btn" onclick="toggleAiChat()">&times;</button>
+            </div>
+
+            <!-- CHAT MESSAGE LOG -->
+            <div id="aiMessageFeed" class="ai-message-feed">
+                <div class="ai-message bot-message">
+                    <div class="message-content">
+                        👋 Hi! I am your <b>EventLoop AI Logistics & Budget Copilot</b>.<br><br>
+                        Tell me what event you're organizing and your budget, or click any prompt below to get started!
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK SUGGESTION CHIPS -->
+            <div id="aiSuggestionChips" class="ai-suggestion-chips">
+                <button class="chip-btn" onclick="sendAiQuickPrompt('Budget: 50000, 20 chairs, 3 projectors, 10 cables, 5 banners, 200 badges')">💡 Optimize ₹50k Budget</button>
+                <button class="chip-btn" onclick="sendAiQuickPrompt('How is this AI trained and architected?')">🎓 How is AI trained?</button>
+                <button class="chip-btn" onclick="sendAiQuickPrompt('Check unverified items in inventory')">🛡️ Audit Unverified Items</button>
+            </div>
+
+            <!-- CHAT INPUT BAR -->
+            <div class="ai-chat-input-bar">
+                <input type="text" id="aiChatInput" placeholder="Ask AI: e.g. Budget 50000, 20 chairs, 3 projectors..." onkeydown="if(event.key==='Enter') sendAiMessage()">
+                <button id="aiSendBtn" class="ai-send-btn" onclick="sendAiMessage()">➔</button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>

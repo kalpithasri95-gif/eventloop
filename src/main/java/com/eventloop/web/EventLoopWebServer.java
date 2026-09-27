@@ -106,6 +106,8 @@ public class EventLoopWebServer {
         server.createContext("/api/auth/login", new LoginApiHandler());
         server.createContext("/api/auth/register", new RegisterApiHandler());
         server.createContext("/api/oop-demo", new OopDemoApiHandler());
+        server.createContext("/api/optimizer/generate-plans", new OptimizerApiHandler());
+        server.createContext("/api/ai/chat", new AiChatApiHandler());
 
         server.setExecutor(null); // Default executor
         server.start();
@@ -681,6 +683,68 @@ public class EventLoopWebServer {
                 sendJsonResponse(ex, 200, "{\"success\":true,\"message\":\"User registered successfully\"}");
             } catch (Exception e) {
                 sendError(ex, 400, e.getMessage());
+            }
+        }
+    }
+
+    // 14. Budget Optimizer API
+    private static class OptimizerApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange ex) throws IOException {
+            setCors(ex);
+            if (handleOptions(ex)) return;
+
+            try {
+                String body = readBody(ex);
+                double budget = 50000.0;
+                List<com.eventloop.service.BudgetOptimizerService.RequirementItem> items = new ArrayList<>();
+
+                if (body != null && !body.trim().isEmpty()) {
+                    Map<String, String> map = JsonUtil.parseSimpleJson(body);
+                    if (map.containsKey("budget")) {
+                        try { budget = Double.parseDouble(map.get("budget")); } catch (Exception ignored) {}
+                    }
+                    if (map.containsKey("itemsText")) {
+                        String text = map.get("itemsText");
+                        java.util.regex.Pattern p = java.util.regex.Pattern.compile("([0-9]+)\\s+([a-zA-Z]+(?:\\s+[a-zA-Z]+)?)");
+                        java.util.regex.Matcher m = p.matcher(text);
+                        while (m.find()) {
+                            items.add(new com.eventloop.service.BudgetOptimizerService.RequirementItem(m.group(2).trim(), Integer.parseInt(m.group(1))));
+                        }
+                    }
+                }
+
+                if (items.isEmpty()) {
+                    items.add(new com.eventloop.service.BudgetOptimizerService.RequirementItem("Chairs", 20));
+                    items.add(new com.eventloop.service.BudgetOptimizerService.RequirementItem("Projectors", 3));
+                    items.add(new com.eventloop.service.BudgetOptimizerService.RequirementItem("Extension Cables", 10));
+                    items.add(new com.eventloop.service.BudgetOptimizerService.RequirementItem("Standee Banners", 5));
+                    items.add(new com.eventloop.service.BudgetOptimizerService.RequirementItem("Delegate Badges", 200));
+                }
+
+                List<com.eventloop.model.BudgetScenarioPlan> plans = com.eventloop.service.BudgetOptimizerService.getInstance().generateScenarios(budget, items);
+                sendJsonResponse(ex, 200, JsonUtil.toJson(plans));
+            } catch (Exception e) {
+                sendError(ex, 400, e.getMessage());
+            }
+        }
+    }
+
+    // 15. AI Copilot Chatbot API
+    private static class AiChatApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange ex) throws IOException {
+            setCors(ex);
+            if (handleOptions(ex)) return;
+
+            try {
+                String body = readBody(ex);
+                Map<String, String> map = JsonUtil.parseSimpleJson(body);
+                String msg = map.getOrDefault("message", "");
+                com.eventloop.service.AiCopilotService.ChatResponse reply = com.eventloop.service.AiCopilotService.getInstance().processQuery(msg);
+                sendJsonResponse(ex, 200, JsonUtil.toJson(reply));
+            } catch (Exception e) {
+                sendError(ex, 500, e.getMessage());
             }
         }
     }

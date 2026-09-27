@@ -4,12 +4,8 @@
  */
 
 // Global State
-let currentUser = {
-    userId: 1,
-    username: 'admin',
-    fullName: 'Prof. Rajesh Sharma',
-    role: 'ADMIN'
-};
+// Global State
+let currentUser = null;
 
 let allResources = [];
 let allEvents = [];
@@ -17,12 +13,33 @@ let allReservations = [];
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', () => {
+    initAuthSession();
     updateUserBadge();
     loadDashboard();
     
     // Auto-generate sample IDs for modals
     initModalDefaults();
 });
+
+function initAuthSession() {
+    const saved = localStorage.getItem('eventloop_user') || sessionStorage.getItem('eventloop_user');
+    if (saved) {
+        try {
+            currentUser = JSON.parse(saved);
+        } catch (e) {
+            currentUser = null;
+        }
+    } else {
+        // Default seed admin session for immediate usage
+        currentUser = {
+            userId: 1,
+            username: 'admin',
+            fullName: 'Prof. Rajesh Sharma',
+            role: 'ADMIN'
+        };
+        localStorage.setItem('eventloop_user', JSON.stringify(currentUser));
+    }
+}
 
 function initModalDefaults() {
     const today = new Date().toISOString().split('T')[0];
@@ -61,33 +78,93 @@ function switchTab(tabName) {
     else if (tabName === 'reports') loadReport();
 }
 
-// ==================== USER & AUTH ====================
+// ==================== USER & PRODUCTION AUTH ====================
 function updateUserBadge() {
+    const badge = document.getElementById('userProfileBadge');
+    const btnLogout = document.getElementById('btnLogout');
+    const btnLoginPrompt = document.getElementById('btnLoginPrompt');
     const nameEl = document.getElementById('userName');
     const roleEl = document.getElementById('userRole');
-    if (nameEl) nameEl.textContent = currentUser.fullName;
-    if (roleEl) {
-        roleEl.textContent = currentUser.role;
-        roleEl.className = 'role-pill ' + 
-            (currentUser.role === 'ADMIN' ? 'role-admin' : 
-            (currentUser.role === 'ORGANIZER' ? 'role-organizer' : 'role-cultural'));
+
+    if (currentUser && currentUser.username) {
+        if (badge) badge.style.display = 'flex';
+        if (btnLogout) btnLogout.style.display = 'inline-flex';
+        if (btnLoginPrompt) btnLoginPrompt.style.display = 'none';
+
+        if (nameEl) nameEl.textContent = currentUser.fullName || currentUser.username;
+        if (roleEl) {
+            roleEl.textContent = currentUser.role || 'USER';
+            roleEl.className = 'role-pill ' + 
+                (currentUser.role === 'ADMIN' ? 'role-admin' : 
+                (currentUser.role === 'ORGANIZER' ? 'role-organizer' : 'role-cultural'));
+        }
+    } else {
+        if (badge) badge.style.display = 'none';
+        if (btnLogout) btnLogout.style.display = 'none';
+        if (btnLoginPrompt) btnLoginPrompt.style.display = 'inline-flex';
     }
 }
 
 function openLoginModal() {
+    switchAuthTab('login');
     openModal('modalLogin');
+    setTimeout(() => {
+        const input = document.getElementById('loginUsername');
+        if (input) input.focus();
+    }, 150);
 }
 
-function quickLogin(username, password) {
-    document.getElementById('loginUsername').value = username;
-    document.getElementById('loginPassword').value = password;
-    submitLogin();
+function togglePasswordVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) icon.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        if (icon) icon.textContent = '👁️';
+    }
+}
+
+function switchAuthTab(tab) {
+    const loginForm = document.getElementById('authLoginForm');
+    const regForm = document.getElementById('authRegisterForm');
+    const tabLogin = document.getElementById('tabBtnLogin');
+    const tabReg = document.getElementById('tabBtnRegister');
+    const title = document.getElementById('authModalTitle');
+
+    if (tab === 'register') {
+        if (loginForm) loginForm.style.display = 'none';
+        if (regForm) regForm.style.display = 'block';
+        if (tabLogin) tabLogin.classList.remove('active');
+        if (tabReg) tabReg.classList.add('active');
+        if (title) title.textContent = '📝 Create EventLoop Account';
+    } else {
+        if (loginForm) loginForm.style.display = 'block';
+        if (regForm) regForm.style.display = 'none';
+        if (tabLogin) tabLogin.classList.add('active');
+        if (tabReg) tabReg.classList.remove('active');
+        if (title) title.textContent = '🔐 EventLoop Account Access';
+    }
 }
 
 async function submitLogin() {
     const u = document.getElementById('loginUsername').value.trim();
-    const p = document.getElementById('loginPassword').value.trim();
-    
+    const p = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('btnSubmitLogin');
+
+    if (!u || !p) {
+        showToast('Please enter both username/email and password', 'warning');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Signing in...';
+    }
+
     try {
         const res = await fetch('/api/auth/login', {
             method: 'POST',
@@ -95,20 +172,98 @@ async function submitLogin() {
             body: JSON.stringify({ username: u, password: p })
         });
         const data = await res.json();
-        
-        if (data.success && data.user) {
-            currentUser = data.user;
+
+        if (res.ok && (data.userId || data.username)) {
+            currentUser = data;
+            const remember = document.getElementById('chkRememberMe')?.checked;
+            if (remember) {
+                localStorage.setItem('eventloop_user', JSON.stringify(currentUser));
+            } else {
+                sessionStorage.setItem('eventloop_user', JSON.stringify(currentUser));
+            }
             updateUserBadge();
             closeModal('modalLogin');
-            showToast(`Welcome, ${currentUser.fullName} (${currentUser.role})!`, 'success');
+            showToast(`Welcome back, ${currentUser.fullName || currentUser.username}!`, 'success');
             loadDashboard();
         } else {
-            showToast(data.message || 'Login failed', 'danger');
+            showToast(data.error || data.message || 'Invalid credentials. Please try again.', 'danger');
         }
     } catch (err) {
-        showToast('Login server error: ' + err.message, 'danger');
+        showToast('Login error: ' + err.message, 'danger');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+        }
     }
 }
+
+async function submitRegister() {
+    const fullName = document.getElementById('regFullName')?.value.trim();
+    const email = document.getElementById('regEmail')?.value.trim();
+    const username = document.getElementById('regUsername')?.value.trim();
+    const role = document.getElementById('regRole')?.value || 'ORGANIZER';
+    const dept = document.getElementById('regDept')?.value.trim() || 'Student Activities';
+    const password = document.getElementById('regPassword')?.value;
+    const btn = document.getElementById('btnSubmitRegister');
+
+    if (!fullName || !email || !username || !password) {
+        showToast('Please fill in all required registration fields', 'warning');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Creating account...';
+    }
+
+    try {
+        const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fullName: fullName,
+                email: email,
+                username: username,
+                role: role,
+                department: dept,
+                password: password
+            })
+        });
+        const data = await res.json();
+
+        if (res.ok && (data.success || data.message)) {
+            showToast('Account registered successfully! Please sign in.', 'success');
+            switchAuthTab('login');
+            const loginUserField = document.getElementById('loginUsername');
+            const loginPassField = document.getElementById('loginPassword');
+            if (loginUserField) loginUserField.value = username;
+            if (loginPassField) {
+                loginPassField.value = '';
+                loginPassField.focus();
+            }
+        } else {
+            showToast(data.error || data.message || 'Registration failed', 'danger');
+        }
+    } catch (err) {
+        showToast('Registration error: ' + err.message, 'danger');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+        }
+    }
+}
+
+function logout() {
+    localStorage.removeItem('eventloop_user');
+    sessionStorage.removeItem('eventloop_user');
+    currentUser = null;
+    updateUserBadge();
+    showToast('You have been logged out safely.', 'info');
+    openLoginModal();
+}
+
 
 // ==================== 1. DASHBOARD ====================
 async function loadDashboard() {

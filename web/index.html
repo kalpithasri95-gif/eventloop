@@ -24,12 +24,13 @@
             </div>
 
             <div class="header-user">
-                <div id="userProfileBadge" class="user-badge">
+                <div id="userProfileBadge" class="user-badge" style="display: none;">
                     <span class="user-avatar">👤</span>
                     <span id="userName">Prof. Rajesh Sharma</span>
                     <span id="userRole" class="role-pill role-admin">ADMIN</span>
                 </div>
-                <button id="btnSwitchUser" class="btn btn-outline-light btn-sm" onclick="openLoginModal()">Switch Role</button>
+                <button id="btnLogout" class="btn btn-logout btn-sm" onclick="logout()" style="display: none;">🚪 Logout</button>
+                <button id="btnLoginPrompt" class="btn btn-primary btn-sm" onclick="openLoginModal()">🔑 Sign In</button>
             </div>
         </div>
     </header>
@@ -428,31 +429,82 @@
 
     <!-- ==================== MODALS ==================== -->
 
-    <!-- LOGIN / SWITCH ROLE MODAL -->
+    <!-- AUTHENTICATION (LOGIN & REGISTRATION) MODAL -->
     <div id="modalLogin" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>🔄 Sign In to EventLoop</h3>
+                <h3 id="authModalTitle">🔐 EventLoop Account Access</h3>
                 <span class="modal-close" onclick="closeModal('modalLogin')">&times;</span>
             </div>
             <div class="modal-body">
-                <div class="demo-role-box mb-3">
-                    <label class="text-muted small">⚡ One-Click Demo Role Login:</label>
-                    <div class="d-flex flex-col gap-2 mt-1">
-                        <button class="btn btn-outline" onclick="quickLogin('admin', 'admin123')">👑 Store Manager / Admin (Prof. Rajesh Sharma)</button>
-                        <button class="btn btn-outline" onclick="quickLogin('organizer', 'org123')">🎯 IEEE Club Organizer (Priya Raman)</button>
-                        <button class="btn btn-outline" onclick="quickLogin('cultural', 'cult123')">🎭 Cultural Committee (Karthik Sundar)</button>
+                <!-- AUTH TABS -->
+                <div class="auth-tabs">
+                    <button id="tabBtnLogin" class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+                    <button id="tabBtnRegister" class="auth-tab" onclick="switchAuthTab('register')">Register New User</button>
+                </div>
+
+                <!-- SIGN IN FORM -->
+                <div id="authLoginForm">
+                    <div class="form-group mb-2">
+                        <label for="loginUsername">Username or Email Address:</label>
+                        <input type="text" id="loginUsername" class="form-control" placeholder="Enter username or email" autocomplete="username">
                     </div>
+                    <div class="form-group mb-3">
+                        <label for="loginPassword">Password:</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="loginPassword" class="form-control" placeholder="Enter password" autocomplete="current-password">
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', 'eyeIconLogin')" title="Toggle Password Visibility">
+                                <span id="eyeIconLogin">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-between items-center mb-3">
+                        <label class="d-flex items-center gap-1 small text-muted" style="cursor: pointer;">
+                            <input type="checkbox" id="chkRememberMe" checked> Remember this device
+                        </label>
+                    </div>
+                    <button id="btnSubmitLogin" class="btn btn-primary btn-block" onclick="submitLogin()">Sign In</button>
                 </div>
-                <div class="form-group mb-2">
-                    <label>Username / Email:</label>
-                    <input type="text" id="loginUsername" class="form-control" value="admin">
+
+                <!-- REGISTER FORM -->
+                <div id="authRegisterForm" style="display: none;">
+                    <div class="form-group mb-2">
+                        <label for="regFullName">Full Name:</label>
+                        <input type="text" id="regFullName" class="form-control" placeholder="e.g. Dr. K. Ramanathan">
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="regEmail">Campus Email:</label>
+                        <input type="email" id="regEmail" class="form-control" placeholder="e.g. ramanathan@college.edu">
+                    </div>
+                    <div class="form-row mb-2">
+                        <div class="form-group">
+                            <label for="regUsername">Username:</label>
+                            <input type="text" id="regUsername" class="form-control" placeholder="ramanathan">
+                        </div>
+                        <div class="form-group">
+                            <label for="regRole">Role:</label>
+                            <select id="regRole" class="form-control">
+                                <option value="ORGANIZER">Event Organizer</option>
+                                <option value="ADMIN">Store Manager / Admin</option>
+                                <option value="CULTURAL">Cultural Council</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="regDept">Department / Club:</label>
+                        <input type="text" id="regDept" class="form-control" placeholder="e.g. Mechanical Dept / Robotics Club">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="regPassword">Password:</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="regPassword" class="form-control" placeholder="Choose a strong password" autocomplete="new-password">
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('regPassword', 'eyeIconReg')" title="Toggle Password Visibility">
+                                <span id="eyeIconReg">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="btnSubmitRegister" class="btn btn-success btn-block" onclick="submitRegister()">Create Account</button>
                 </div>
-                <div class="form-group mb-3">
-                    <label>Password (Masked):</label>
-                    <input type="password" id="loginPassword" class="form-control" value="admin123">
-                </div>
-                <button class="btn btn-primary btn-block" onclick="submitLogin()">Sign In</button>
             </div>
         </div>
     </div>
